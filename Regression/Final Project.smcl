@@ -1,0 +1,423 @@
+{smcl}
+{com}{sf}{ul off}{txt}{.-}
+      name:  {res}<unnamed>
+       {txt}log:  {res}C:\Users\hyattjon\Box\Econ 398\Final Project\Final Project.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res} 6 Dec 2023, 12:26:38
+{txt}
+{com}. 
+. cd "C:\Users\hyattjon\Box\Econ 398\Final Project\data"
+{res}C:\Users\hyattjon\Box\Econ 398\Final Project\data
+{txt}
+{com}. //Import Final Dataset//
+. use final_data.dta, clear
+{txt}
+{com}. 
+. //Drop NULL Value//
+. drop if retention == "NULL"
+{txt}(0 observations deleted)
+
+{com}. //Make all data the right type//
+. destring retention, replace
+{txt}retention: all characters numeric; {res}replaced {txt}as {res}double
+{txt}
+{com}. destring gradrate, replace force
+{txt}gradrate: contains nonnumeric characters; {res}replaced {txt}as {res}double
+{txt}(243 missing values generated)
+{res}{txt}
+{com}. destring loan_ever, replace force
+{txt}loan_ever: contains nonnumeric characters; {res}replaced {txt}as {res}double
+{txt}(3629 missing values generated)
+{res}{txt}
+{com}. destring pell_ever, replace force
+{txt}pell_ever: contains nonnumeric characters; {res}replaced {txt}as {res}double
+{txt}(3036 missing values generated)
+{res}{txt}
+{com}. destring faminc, replace force
+{txt}faminc: contains nonnumeric characters; {res}replaced {txt}as {res}double
+{txt}(2288 missing values generated)
+{res}{txt}
+{com}. destring adm_rate, replace force
+{txt}adm_rate: contains nonnumeric characters; {res}replaced {txt}as {res}double
+{txt}(2391 missing values generated)
+{res}{txt}
+{com}. destring cost_attend, replace force
+{txt}cost_attend: contains nonnumeric characters; {res}replaced {txt}as {res}long
+{txt}(3206 missing values generated)
+{res}{txt}
+{com}. destring avgfacsal, replace force
+{txt}avgfacsal: contains nonnumeric characters; {res}replaced {txt}as {res}int
+{txt}(225 missing values generated)
+{res}{txt}
+{com}. 
+. 
+. //Organize Dataset so it's easier to read//
+. sort fips instnm year
+{txt}
+{com}. 
+. //Replace any missing values with the mean of the variable
+. foreach var in adm_rate cost_attend loan_ever pell_ever faminc avgfacsal gradrate{c -(}
+{txt}  2{com}.         egen mean = mean(`var')
+{txt}  3{com}.         replace `var' = mean if missing(`var')
+{txt}  4{com}.         drop mean
+{txt}  5{com}. {c )-}
+{txt}(2,391 real changes made)
+variable {bf}{res}cost_attend{sf}{txt} was {bf}{res}long{sf}{txt} now {bf}{res}double{sf}
+{txt}(3,206 real changes made)
+(3,629 real changes made)
+(3,036 real changes made)
+(2,288 real changes made)
+variable {bf}{res}avgfacsal{sf}{txt} was {bf}{res}int{sf}{txt} now {bf}{res}float{sf}
+{txt}(225 real changes made)
+(243 real changes made)
+
+{com}. 
+. //Create variable for treatment and which year the state was treated//
+. gen treated = 0
+{txt}
+{com}. replace treated = 2013 if fips == 8 | fips == 53
+{txt}(278 real changes made)
+
+{com}. replace treated = 2015 if fips == 2 | fips == 11 | fips == 41
+{txt}(101 real changes made)
+
+{com}. replace treated = 2017 if fips == 6 | fips == 23 | fips == 32
+{txt}(746 real changes made)
+
+{com}. replace treated = 2019 if fips == 50 | fips == 26 | fips == 25
+{txt}(603 real changes made)
+
+{com}. *maybe we add 2019 depending on what Dr. Pope says
+. 
+. gen years_before=.
+{txt}(8,956 missing values generated)
+
+{com}. 
+. foreach x in 2 6 8 50 53 11 41 23 32 26 25{c -(}
+{txt}  2{com}.         replace years_before = 0 if year==treated & fips==`x' 
+{txt}  3{com}.         replace years_before = year - treated if years_before!=0 & fips==`x'
+{txt}  4{com}. {c )-}
+{txt}(1 real change made)
+(14 real changes made)
+(26 real changes made)
+(531 real changes made)
+(8 real changes made)
+(139 real changes made)
+(3 real changes made)
+(96 real changes made)
+(5 real changes made)
+(126 real changes made)
+(0 real changes made)
+(10 real changes made)
+(4 real changes made)
+(72 real changes made)
+(8 real changes made)
+(144 real changes made)
+(2 real changes made)
+(35 real changes made)
+(13 real changes made)
+(188 real changes made)
+(13 real changes made)
+(290 real changes made)
+
+{com}. 
+. replace years_before = year-2016 if years_before==.
+{txt}(7,228 real changes made)
+
+{com}. 
+. 
+. //Print out graphs used to check for balance//
+. sum if treat !=0
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 8}year {c |}{res}      1,728    2011.681    5.187024       2004       2021
+{txt}{space 8}fips {c |}{res}      1,728    21.49769    15.57461          2         53
+{txt}med_hs_inc~e {c |}{res}      1,728    59569.05    10391.78      40990      87810
+{txt}{space 3}totemploy {c |}{res}      1,728     7277683     6879704   288250.3   1.86e+07
+{txt}{space 7}urate {c |}{res}      1,728    6.500395    2.436426        2.1   13.73333
+{txt}{hline 13}{c +}{hline 57}
+{space 9}gdp {c |}{res}      1,728    9.40e+11    9.86e+11   2.29e+10   3.37e+12
+{txt}{space 6}instnm {c |}{res}          0
+{txt}{space 7}state {c |}{res}          0
+{txt}common_deg~e {c |}{res}      1,728    2.659144    .6021749          1          3
+{txt}{space 3}ownership {c |}{res}      1,611    2.134078    .6388261          1          3
+{txt}{hline 13}{c +}{hline 57}
+{space 4}adm_rate {c |}{res}      1,728    .6251573    .2152715          0          1
+{txt}{space 1}cost_attend {c |}{res}      1,728    34756.18    13531.61       8664      79539
+{txt}{space 3}avgfacsal {c |}{res}      1,728    6253.432    2395.194        318      14733
+{txt}{space 4}gradrate {c |}{res}      1,728    .5391163    .2314546          0          1
+{txt}{space 3}retention {c |}{res}      1,728    .7096709    .1903181          0          1
+{txt}{hline 13}{c +}{hline 57}
+{space 3}loan_ever {c |}{res}      1,728    .8866204    .1054808   .0059072   .9913867
+{txt}{space 3}pell_ever {c |}{res}      1,728    .6160492    .1375083   .1988166   .9606088
+{txt}{space 6}faminc {c |}{res}      1,728    53614.93     21799.9   8844.273   133750.7
+{txt}{space 7}legal {c |}{res}      1,728     .228588    .4200448          0          1
+{txt}{space 5}treated {c |}{res}      1,728    2016.938    2.049934       2013       2019
+{txt}{hline 13}{c +}{hline 57}
+years_before {c |}{res}      1,728   -5.256366    5.429947        -15          8
+{txt}
+{com}. sum if treat ==0
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 8}year {c |}{res}      7,228    2011.909    5.180138       2004       2021
+{txt}{space 8}fips {c |}{res}      7,228    30.37701    13.97877          1         55
+{txt}med_hs_inc~e {c |}{res}      7,228       53374    10947.39      32880      97330
+{txt}{space 3}totemploy {c |}{res}      7,228     4632295     3126938   341685.9   1.35e+07
+{txt}{space 7}urate {c |}{res}      7,228    5.902913    2.032177   2.166667   11.85833
+{txt}{hline 13}{c +}{hline 57}
+{space 9}gdp {c |}{res}      7,228    5.56e+11    4.72e+11   2.33e+10   2.05e+12
+{txt}{space 6}instnm {c |}{res}          0
+{txt}{space 7}state {c |}{res}          0
+{txt}common_deg~e {c |}{res}      7,228    2.739347    .5115153          1          3
+{txt}{space 3}ownership {c |}{res}      6,775    2.010332    .5061296          1          3
+{txt}{hline 13}{c +}{hline 57}
+{space 4}adm_rate {c |}{res}      7,228    .6551318    .1860171          0          1
+{txt}{space 1}cost_attend {c |}{res}      7,228    30365.33    11685.56       3368      78043
+{txt}{space 3}avgfacsal {c |}{res}      7,228    5372.011    1911.416          0      14249
+{txt}{space 4}gradrate {c |}{res}      7,228    .4772248    .2293045          0          1
+{txt}{space 3}retention {c |}{res}      7,228    .6872669    .1884652          0          1
+{txt}{hline 13}{c +}{hline 57}
+{space 3}loan_ever {c |}{res}      7,228     .877803    .1187078   .0143027   .9910931
+{txt}{space 3}pell_ever {c |}{res}      7,228    .6464956    .1433981   .0980019   .9880989
+{txt}{space 6}faminc {c |}{res}      7,228    48531.69    21091.92   1743.929   153223.8
+{txt}{space 7}legal {c |}{res}      7,228    .0074709    .0861171          0          1
+{txt}{space 5}treated {c |}{res}      7,228           0           0          0          0
+{txt}{hline 13}{c +}{hline 57}
+years_before {c |}{res}      7,228   -4.091035    5.180138        -12          5
+{txt}
+{com}. 
+. //Setting variables for XTDIDRegression////
+. ssc install event_plot
+{txt}checking {hilite:event_plot} consistency and verifying not already installed...
+all files already exist and are up to date.
+
+{com}. encode instnm, generate(inst)
+{txt}
+{com}. xtset fips
+
+{txt}{col 1}Panel variable: {res}fips{txt} (unbalanced)
+
+{com}. 
+. //Basic Regression//
+. xtdidregress (retention urate gdp totemploy) (legal), group(fips) time(year)
+{res}
+{txt}Treatment and time information
+
+Time variable: {result:year}
+Control:       {result:legal} = {result:0}
+Treatment:     {result:legal} = {result:1}
+{res}{txt}{hline 13}{c TT}{hline 10}{hline 11}
+{col 14}{c |}   Control{col 25}  Treatment
+{hline 13}{c +}{hline 10}{hline 11}
+{res}Group        {txt}{c |}
+{space 8}fips {c |}{col 14}{res}{space 1}       35{col 25}{space 2}       14
+{txt}{hline 13}{c +}{hline 10}{hline 11}
+{res}Time         {txt}{c |}
+{space 5}Minimum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2013
+{txt}{space 5}Maximum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2021
+{txt}{hline 13}{c BT}{hline 10}{hline 11}
+
+{col 1}Difference-in-differences regression{col 58}{lalign 13:Number of obs}{col 71} = {res}{ralign 5:8,956}
+{txt}Data type: Longitudinal
+
+{res}{txt}{ralign 78:(Std. err. adjusted for {res:49} clusters in {res:fips})}
+{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}   retention{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}ATET         {txt}{c |}
+{space 7}legal {c |}
+{space 3}(1 vs 0)  {c |}{col 14}{res}{space 2} .0106301{col 26}{space 2} .0127704{col 37}{space 1}    0.83{col 46}{space 3}0.409{col 54}{space 4}-.0150464{col 67}{space 3} .0363066
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{p 0 6 2}Note: ATET estimate adjusted for covariates,{txt} panel effects, and time effects.{p_end}
+{p 0 6 2}Note: Treatment occurs {help j_xthetdid##|_new:at different times}.{txt}{p_end}
+
+{com}. xtdidregress (retention urate gdp totemploy med_hs_income ownership) (legal), group(fips) time(year)
+{res}
+{txt}Treatment and time information
+
+Time variable: {result:year}
+Control:       {result:legal} = {result:0}
+Treatment:     {result:legal} = {result:1}
+{res}{txt}{hline 13}{c TT}{hline 10}{hline 11}
+{col 14}{c |}   Control{col 25}  Treatment
+{hline 13}{c +}{hline 10}{hline 11}
+{res}Group        {txt}{c |}
+{space 8}fips {c |}{col 14}{res}{space 1}       35{col 25}{space 2}       14
+{txt}{hline 13}{c +}{hline 10}{hline 11}
+{res}Time         {txt}{c |}
+{space 5}Minimum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2013
+{txt}{space 5}Maximum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2021
+{txt}{hline 13}{c BT}{hline 10}{hline 11}
+
+{col 1}Difference-in-differences regression{col 58}{lalign 13:Number of obs}{col 71} = {res}{ralign 5:8,386}
+{txt}Data type: Longitudinal
+
+{res}{txt}{ralign 79:(Std. err. adjusted for {res:49} clusters in {res:fips})}
+{hline 14}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 15}{c |}{col 27}    Robust
+{col 1}    retention{col 15}{c |} Coefficient{col 27}  std. err.{col 39}      t{col 47}   P>|t|{col 55}     [95% con{col 68}f. interval]
+{hline 14}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}ATET          {txt}{c |}
+{space 8}legal {c |}
+{space 4}(1 vs 0)  {c |}{col 15}{res}{space 2} .0048508{col 27}{space 2} .0121063{col 38}{space 1}    0.40{col 47}{space 3}0.690{col 55}{space 4}-.0194905{col 68}{space 3} .0291921
+{txt}{hline 14}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{p 0 6 2}Note: ATET estimate adjusted for covariates,{txt} panel effects, and time effects.{p_end}
+{p 0 6 2}Note: Treatment occurs {help j_xthetdid##|_new:at different times}.{txt}{p_end}
+
+{com}. xtdidregress (retention urate gdp adm_rate cost_attend) (legal), group(fips) time(year)
+{res}
+{txt}Treatment and time information
+
+Time variable: {result:year}
+Control:       {result:legal} = {result:0}
+Treatment:     {result:legal} = {result:1}
+{res}{txt}{hline 13}{c TT}{hline 10}{hline 11}
+{col 14}{c |}   Control{col 25}  Treatment
+{hline 13}{c +}{hline 10}{hline 11}
+{res}Group        {txt}{c |}
+{space 8}fips {c |}{col 14}{res}{space 1}       35{col 25}{space 2}       14
+{txt}{hline 13}{c +}{hline 10}{hline 11}
+{res}Time         {txt}{c |}
+{space 5}Minimum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2013
+{txt}{space 5}Maximum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2021
+{txt}{hline 13}{c BT}{hline 10}{hline 11}
+
+{col 1}Difference-in-differences regression{col 58}{lalign 13:Number of obs}{col 71} = {res}{ralign 5:8,956}
+{txt}Data type: Longitudinal
+
+{res}{txt}{ralign 78:(Std. err. adjusted for {res:49} clusters in {res:fips})}
+{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}   retention{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}ATET         {txt}{c |}
+{space 7}legal {c |}
+{space 3}(1 vs 0)  {c |}{col 14}{res}{space 2} .0017757{col 26}{space 2} .0151648{col 37}{space 1}    0.12{col 46}{space 3}0.907{col 54}{space 4}-.0287152{col 67}{space 3} .0322667
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{p 0 6 2}Note: ATET estimate adjusted for covariates,{txt} panel effects, and time effects.{p_end}
+{p 0 6 2}Note: Treatment occurs {help j_xthetdid##|_new:at different times}.{txt}{p_end}
+
+{com}. *Just trying out different combination to bring P-value down. Lowest P-value we found so far is .505 with (urate gdp adm_rate cost_attend)
+. 
+. 
+. //FOR REFERENCE : Jane's regression//
+. *xi: regress retention legal i.inst i.year
+. 
+. *the only variables I could not use were the loan_ever pell_ever and faminc I got a syntax error
+. //Robust standard errors//
+. xtdidregress (retention med_hs_income urate gdp ownership adm_rate cost_attend avgfacsal) (legal), group(fips) time(year) vce(robust)
+{res}
+{txt}Treatment and time information
+
+Time variable: {result:year}
+Control:       {result:legal} = {result:0}
+Treatment:     {result:legal} = {result:1}
+{res}{txt}{hline 13}{c TT}{hline 10}{hline 11}
+{col 14}{c |}   Control{col 25}  Treatment
+{hline 13}{c +}{hline 10}{hline 11}
+{res}Group        {txt}{c |}
+{space 8}fips {c |}{col 14}{res}{space 1}       35{col 25}{space 2}       14
+{txt}{hline 13}{c +}{hline 10}{hline 11}
+{res}Time         {txt}{c |}
+{space 5}Minimum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2013
+{txt}{space 5}Maximum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2021
+{txt}{hline 13}{c BT}{hline 10}{hline 11}
+
+{col 1}Difference-in-differences regression{col 58}{lalign 13:Number of obs}{col 71} = {res}{ralign 5:8,386}
+{txt}Data type: Longitudinal
+
+{res}{txt}{ralign 79:(Std. err. adjusted for {res:49} clusters in {res:fips})}
+{hline 14}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 15}{c |}{col 27}    Robust
+{col 1}    retention{col 15}{c |} Coefficient{col 27}  std. err.{col 39}      t{col 47}   P>|t|{col 55}     [95% con{col 68}f. interval]
+{hline 14}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}ATET          {txt}{c |}
+{space 8}legal {c |}
+{space 4}(1 vs 0)  {c |}{col 15}{res}{space 2}-.0076569{col 27}{space 2} .0137888{col 38}{space 1}   -0.56{col 47}{space 3}0.581{col 55}{space 4}-.0353811{col 68}{space 3} .0200672
+{txt}{hline 14}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{p 0 6 2}Note: ATET estimate adjusted for covariates,{txt} panel effects, and time effects.{p_end}
+{p 0 6 2}Note: Treatment occurs {help j_xthetdid##|_new:at different times}.{txt}{p_end}
+
+{com}. 
+. *here is where we create the residuals so we can graph them. They come from the regression directly above. We cannot use this when aggregate is in use.
+. predict resid, residuals
+{res}{txt}
+{com}. //Wild Bootstrap//
+. xtdidregress (retention med_hs_income totemploy urate gdp ownership adm_rate cost_attend avgfacsal) (legal), group(fips) time(year) aggregate(standard)
+{res}
+{txt}Treatment and time information
+
+Time variable: {result:year}
+Control:       {result:legal} = {result:0}
+Treatment:     {result:legal} = {result:1}
+{res}{txt}{hline 13}{c TT}{hline 10}{hline 11}
+{col 14}{c |}   Control{col 25}  Treatment
+{hline 13}{c +}{hline 10}{hline 11}
+{res}Group        {txt}{c |}
+{space 8}fips {c |}{col 14}{res}{space 1}       35{col 25}{space 2}       14
+{txt}{hline 13}{c +}{hline 10}{hline 11}
+{res}Time         {txt}{c |}
+{space 5}Minimum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2013
+{txt}{space 5}Maximum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2021
+{txt}{hline 13}{c BT}{hline 10}{hline 11}
+
+{col 1}Difference-in-differences regression{col 60}{lalign 13:Number of obs}{col 73} = {res}{ralign 3:812}
+{txt}Data type:   Longitudinal
+Aggregation:{bf: Standard}
+
+{res}{txt}{ralign 79:(Std. err. adjusted for {res:49} clusters in {res:fips})}
+{hline 14}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 15}{c |}{col 27}    Robust
+{col 1}    retention{col 15}{c |} Coefficient{col 27}  std. err.{col 39}      t{col 47}   P>|t|{col 55}     [95% con{col 68}f. interval]
+{hline 14}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}ATET          {txt}{c |}
+{space 8}legal {c |}
+{space 4}(1 vs 0)  {c |}{col 15}{res}{space 2}-.0009439{col 27}{space 2} .0295039{col 38}{space 1}   -0.03{col 47}{space 3}0.975{col 55}{space 4}-.0602656{col 68}{space 3} .0583777
+{txt}{hline 14}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{p 0 6 2}Note: ATET estimate adjusted for covariates,{txt} panel effects, and time effects.{p_end}
+{p 0 6 2}Note: Treatment occurs {help j_xthetdid##|_new:at different times}.{txt}{p_end}
+
+{com}. xtdidregress (retention med_hs_income totemploy urate gdp ownership adm_rate cost_attend avgfacsal) (legal), group(fips) time(year) aggregate(dlang)
+{res}
+{txt}Treatment and time information
+
+Time variable: {result:year}
+Control:       {result:legal} = {result:0}
+Treatment:     {result:legal} = {result:1}
+{res}{txt}{hline 13}{c TT}{hline 10}{hline 11}
+{col 14}{c |}   Control{col 25}  Treatment
+{hline 13}{c +}{hline 10}{hline 11}
+{res}Group        {txt}{c |}
+{space 8}fips {c |}{col 14}{res}{space 1}       35{col 25}{space 2}       14
+{txt}{hline 13}{c +}{hline 10}{hline 11}
+{res}Time         {txt}{c |}
+{space 5}Minimum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2013
+{txt}{space 5}Maximum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2021
+{txt}{hline 13}{c BT}{hline 10}{hline 11}
+
+{col 1}Difference-in-differences regression{col 60}{lalign 13:Number of obs}{col 73} = {res}{ralign 3:812}
+{txt}Data type:   Longitudinal
+Aggregation: {result:Donald}{ch_endash}{result:Lang}
+
+{res}{txt}{hline 14}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 1}    retention{col 15}{c |} Coefficient{col 27}  Std. err.{col 39}      t{col 47}   P>|t|{col 55}     [95% con{col 68}f. interval]
+{hline 14}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}ATET          {txt}{c |}
+{space 8}legal {c |}
+{space 4}(1 vs 0)  {c |}{col 15}{res}{space 2}-.0008915{col 27}{space 2} .0151411{col 38}{space 1}   -0.06{col 47}{space 3}0.953{col 55}{space 4} -.030613{col 68}{space 3}   .02883
+{txt}{hline 14}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{p 0 6 2}Note: ATET estimate adjusted for covariates,{txt} panel effects, and time effects.{p_end}
+{p 0 6 2}Note: Treatment occurs {help j_xthetdid##|_new:at different times}.{txt}{p_end}
+
+{com}. 
+. 
+{txt}end of do-file
+
+{com}. do "C:\Users\hyattjon\AppData\Local\Temp\STD67c8_000000.tmp"
+{txt}
+{com}. cap log close
+{smcl}
+{com}{sf}{ul off}

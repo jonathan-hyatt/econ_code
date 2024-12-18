@@ -1,0 +1,1289 @@
+{smcl}
+{com}{sf}{ul off}{txt}{.-}
+      name:  {res}<unnamed>
+       {txt}log:  {res}C:\Users\hyattjon\Box\Fall 2023\Econ 398\Final Project\output_from_regression\Final Project.txt
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res}18 Dec 2024, 12:37:01
+{txt}
+{com}. 
+. //Import Final Dataset//
+. use data\final_data.dta, clear
+{txt}
+{com}. 
+. cd "C:\Users\hyattjon\Box\Fall 2023\Econ 398\Final Project\output_from_regression"
+{res}C:\Users\hyattjon\Box\Fall 2023\Econ 398\Final Project\output_from_regression
+{txt}
+{com}. //Drop NULL Retention Rates//
+. drop if retention == "NULL"
+{txt}(0 observations deleted)
+
+{com}. 
+. //Make data the correct type//
+. local typelist retention gradrate loan_ever pell_ever faminc adm_rate cost_attend avgfacsal
+{txt}
+{com}. 
+. foreach x in `typelist' {c -(}
+{txt}  2{com}.     destring `x', replace force
+{txt}  3{com}. {c )-}
+{txt}retention: all characters numeric; {res}replaced {txt}as {res}double
+{txt}gradrate: contains nonnumeric characters; {res}replaced {txt}as {res}double
+{txt}(243 missing values generated)
+{res}{txt}loan_ever: contains nonnumeric characters; {res}replaced {txt}as {res}double
+{txt}(3629 missing values generated)
+{res}{txt}pell_ever: contains nonnumeric characters; {res}replaced {txt}as {res}double
+{txt}(3036 missing values generated)
+{res}{txt}faminc: contains nonnumeric characters; {res}replaced {txt}as {res}double
+{txt}(2288 missing values generated)
+{res}{txt}adm_rate: contains nonnumeric characters; {res}replaced {txt}as {res}double
+{txt}(2391 missing values generated)
+{res}{txt}cost_attend: contains nonnumeric characters; {res}replaced {txt}as {res}long
+{txt}(3206 missing values generated)
+{res}{txt}avgfacsal: contains nonnumeric characters; {res}replaced {txt}as {res}int
+{txt}(225 missing values generated)
+{res}{txt}
+{com}. 
+. //Organize Dataset so it's easier to read//
+. sort fips instnm year
+{txt}
+{com}. 
+. //Replace any missing values with the mean of the variable
+. foreach var in adm_rate cost_attend loan_ever pell_ever faminc avgfacsal gradrate{c -(}
+{txt}  2{com}.         egen mean = mean(`var')
+{txt}  3{com}.         replace `var' = mean if missing(`var')
+{txt}  4{com}.         drop mean
+{txt}  5{com}. {c )-}
+{txt}(2,391 real changes made)
+variable {bf}{res}cost_attend{sf}{txt} was {bf}{res}long{sf}{txt} now {bf}{res}double{sf}
+{txt}(3,206 real changes made)
+(3,629 real changes made)
+(3,036 real changes made)
+(2,288 real changes made)
+variable {bf}{res}avgfacsal{sf}{txt} was {bf}{res}int{sf}{txt} now {bf}{res}float{sf}
+{txt}(225 real changes made)
+(243 real changes made)
+
+{com}. 
+. //Create variable for treatment and which year the state was treated//
+. gen treated = 0
+{txt}
+{com}. replace treated = 2013 if fips == 8 | fips == 53
+{txt}(278 real changes made)
+
+{com}. replace treated = 2015 if fips == 2 | fips == 11 | fips == 41
+{txt}(101 real changes made)
+
+{com}. replace treated = 2017 if fips == 6 | fips == 23 | fips == 32
+{txt}(746 real changes made)
+
+{com}. replace treated = 2019 if fips == 50 | fips == 26 | fips == 25
+{txt}(603 real changes made)
+
+{com}. //Adjust years to show years before and after treatment//
+. 
+. //Create an indicator for being a close state//
+. generate close = 0
+{txt}
+{com}. replace close = 1 if fips == 8 | fips == 2 | fips == 23 | fips == 25
+{txt}(617 real changes made)
+
+{com}. 
+. gen years_before=.
+{txt}(8,956 missing values generated)
+
+{com}. *Loops through the treated states to show years pre and post treatment
+. foreach x in 2 6 8 53 11 41 23 32 50 26 25{c -(}
+{txt}  2{com}.         replace years_before = 0 if year==treated & fips==`x' 
+{txt}  3{com}.         replace years_before = year - treated if years_before!=0 & fips==`x'
+{txt}  4{com}. {c )-}
+{txt}(1 real change made)
+(14 real changes made)
+(26 real changes made)
+(531 real changes made)
+(8 real changes made)
+(139 real changes made)
+(5 real changes made)
+(126 real changes made)
+(0 real changes made)
+(10 real changes made)
+(4 real changes made)
+(72 real changes made)
+(8 real changes made)
+(144 real changes made)
+(2 real changes made)
+(35 real changes made)
+(3 real changes made)
+(96 real changes made)
+(13 real changes made)
+(188 real changes made)
+(13 real changes made)
+(290 real changes made)
+
+{com}. 
+. replace years_before = year-2017 if years_before==.
+{txt}(7,228 real changes made)
+
+{com}. 
+. //Print out graphs used to check for balance//
+. sum if treat !=0
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 8}year {c |}{res}      1,728    2011.681    5.187024       2004       2021
+{txt}{space 8}fips {c |}{res}      1,728    21.49769    15.57461          2         53
+{txt}med_hs_inc~e {c |}{res}      1,728    59569.05    10391.78      40990      87810
+{txt}{space 3}totemploy {c |}{res}      1,728     7277683     6879704   288250.3   1.86e+07
+{txt}{space 7}urate {c |}{res}      1,728    6.500395    2.436426        2.1   13.73333
+{txt}{hline 13}{c +}{hline 57}
+{space 9}gdp {c |}{res}      1,728    9.40e+11    9.86e+11   2.29e+10   3.37e+12
+{txt}{space 6}instnm {c |}{res}          0
+{txt}{space 7}state {c |}{res}          0
+{txt}common_deg~e {c |}{res}      1,728    2.659144    .6021749          1          3
+{txt}{space 3}ownership {c |}{res}      1,611    2.134078    .6388261          1          3
+{txt}{hline 13}{c +}{hline 57}
+{space 4}adm_rate {c |}{res}      1,728    .6251573    .2152715          0          1
+{txt}{space 1}cost_attend {c |}{res}      1,728    34756.18    13531.61       8664      79539
+{txt}{space 3}avgfacsal {c |}{res}      1,728    6253.432    2395.194        318      14733
+{txt}{space 4}gradrate {c |}{res}      1,728    .5391163    .2314546          0          1
+{txt}{space 3}retention {c |}{res}      1,728    .7096709    .1903181          0          1
+{txt}{hline 13}{c +}{hline 57}
+{space 3}loan_ever {c |}{res}      1,728    .8866204    .1054808   .0059072   .9913867
+{txt}{space 3}pell_ever {c |}{res}      1,728    .6160492    .1375083   .1988166   .9606088
+{txt}{space 6}faminc {c |}{res}      1,728    53614.93     21799.9   8844.273   133750.7
+{txt}{space 7}legal {c |}{res}      1,728     .228588    .4200448          0          1
+{txt}{space 5}treated {c |}{res}      1,728    2016.938    2.049934       2013       2019
+{txt}{hline 13}{c +}{hline 57}
+{space 7}close {c |}{res}      1,728    .3570602    .4792715          0          1
+{txt}years_before {c |}{res}      1,728   -5.256366    5.429947        -15          8
+{txt}
+{com}. sum if treat ==0
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 8}year {c |}{res}      7,228    2011.909    5.180138       2004       2021
+{txt}{space 8}fips {c |}{res}      7,228    30.37701    13.97877          1         55
+{txt}med_hs_inc~e {c |}{res}      7,228       53374    10947.39      32880      97330
+{txt}{space 3}totemploy {c |}{res}      7,228     4632295     3126938   341685.9   1.35e+07
+{txt}{space 7}urate {c |}{res}      7,228    5.902913    2.032177   2.166667   11.85833
+{txt}{hline 13}{c +}{hline 57}
+{space 9}gdp {c |}{res}      7,228    5.56e+11    4.72e+11   2.33e+10   2.05e+12
+{txt}{space 6}instnm {c |}{res}          0
+{txt}{space 7}state {c |}{res}          0
+{txt}common_deg~e {c |}{res}      7,228    2.739347    .5115153          1          3
+{txt}{space 3}ownership {c |}{res}      6,775    2.010332    .5061296          1          3
+{txt}{hline 13}{c +}{hline 57}
+{space 4}adm_rate {c |}{res}      7,228    .6551318    .1860171          0          1
+{txt}{space 1}cost_attend {c |}{res}      7,228    30365.33    11685.56       3368      78043
+{txt}{space 3}avgfacsal {c |}{res}      7,228    5372.011    1911.416          0      14249
+{txt}{space 4}gradrate {c |}{res}      7,228    .4772248    .2293045          0          1
+{txt}{space 3}retention {c |}{res}      7,228    .6872669    .1884652          0          1
+{txt}{hline 13}{c +}{hline 57}
+{space 3}loan_ever {c |}{res}      7,228     .877803    .1187078   .0143027   .9910931
+{txt}{space 3}pell_ever {c |}{res}      7,228    .6464956    .1433981   .0980019   .9880989
+{txt}{space 6}faminc {c |}{res}      7,228    48531.69    21091.92   1743.929   153223.8
+{txt}{space 7}legal {c |}{res}      7,228    .0074709    .0861171          0          1
+{txt}{space 5}treated {c |}{res}      7,228           0           0          0          0
+{txt}{hline 13}{c +}{hline 57}
+{space 7}close {c |}{res}      7,228           0           0          0          0
+{txt}years_before {c |}{res}      7,228   -5.091035    5.180138        -13          4
+{txt}
+{com}.   
+. //Setting variables for XTDIDRegression////
+. ssc install event_plot
+{txt}checking {hilite:event_plot} consistency and verifying not already installed...
+all files already exist and are up to date.
+
+{com}. encode instnm, generate(inst)
+{txt}
+{com}. xtset fips
+
+{txt}{col 1}Panel variable: {res}fips{txt} (unbalanced)
+
+{com}. global control_list adm_rate cost_attend avgfacsal urate gdp med_hs_income faminc ownership pell_ever
+{txt}
+{com}. 
+. //Basic Regression//
+. *state level controls
+. xtdidregress (retention med_hs_income urate gdp totemploy) (legal), group(fips) time(year)
+{res}
+{txt}Treatment and time information
+
+Time variable: {result:year}
+Control:       {result:legal} = {result:0}
+Treatment:     {result:legal} = {result:1}
+{res}{txt}{hline 13}{c TT}{hline 10}{hline 11}
+{col 14}{c |}   Control{col 25}  Treatment
+{hline 13}{c +}{hline 10}{hline 11}
+{res}Group        {txt}{c |}
+{space 8}fips {c |}{col 14}{res}{space 1}       35{col 25}{space 2}       14
+{txt}{hline 13}{c +}{hline 10}{hline 11}
+{res}Time         {txt}{c |}
+{space 5}Minimum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2013
+{txt}{space 5}Maximum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2021
+{txt}{hline 13}{c BT}{hline 10}{hline 11}
+
+{col 1}Difference-in-differences regression{col 58}{lalign 13:Number of obs}{col 71} = {res}{ralign 5:8,956}
+{txt}Data type: Longitudinal
+
+{res}{txt}{ralign 79:(Std. err. adjusted for {res:49} clusters in {res:fips})}
+{hline 14}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 15}{c |}{col 27}    Robust
+{col 1}    retention{col 15}{c |} Coefficient{col 27}  std. err.{col 39}      t{col 47}   P>|t|{col 55}     [95% con{col 68}f. interval]
+{hline 14}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}ATET          {txt}{c |}
+{space 8}legal {c |}
+{space 4}(1 vs 0)  {c |}{col 15}{res}{space 2} .0109013{col 27}{space 2} .0128304{col 38}{space 1}    0.85{col 47}{space 3}0.400{col 55}{space 4} -.014896{col 68}{space 3} .0366987
+{txt}{hline 14}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{p 0 6 2}Note: ATET estimate adjusted for covariates,{txt} panel effects, and time effects.{p_end}
+{p 0 6 2}Note: Treatment occurs {help j_xthetdid##|_new:at different times}.{txt}{p_end}
+
+{com}. *state and institution controls
+. xtdidregress (retention $control_list) (legal), group(fips) time(year)
+{res}
+{txt}Treatment and time information
+
+Time variable: {result:year}
+Control:       {result:legal} = {result:0}
+Treatment:     {result:legal} = {result:1}
+{res}{txt}{hline 13}{c TT}{hline 10}{hline 11}
+{col 14}{c |}   Control{col 25}  Treatment
+{hline 13}{c +}{hline 10}{hline 11}
+{res}Group        {txt}{c |}
+{space 8}fips {c |}{col 14}{res}{space 1}       35{col 25}{space 2}       14
+{txt}{hline 13}{c +}{hline 10}{hline 11}
+{res}Time         {txt}{c |}
+{space 5}Minimum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2013
+{txt}{space 5}Maximum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2021
+{txt}{hline 13}{c BT}{hline 10}{hline 11}
+
+{col 1}Difference-in-differences regression{col 58}{lalign 13:Number of obs}{col 71} = {res}{ralign 5:8,386}
+{txt}Data type: Longitudinal
+
+{res}{txt}{ralign 79:(Std. err. adjusted for {res:49} clusters in {res:fips})}
+{hline 14}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 15}{c |}{col 27}    Robust
+{col 1}    retention{col 15}{c |} Coefficient{col 27}  std. err.{col 39}      t{col 47}   P>|t|{col 55}     [95% con{col 68}f. interval]
+{hline 14}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}ATET          {txt}{c |}
+{space 8}legal {c |}
+{space 4}(1 vs 0)  {c |}{col 15}{res}{space 2}  .003378{col 27}{space 2} .0126482{col 38}{space 1}    0.27{col 47}{space 3}0.791{col 55}{space 4}-.0220528{col 68}{space 3} .0288088
+{txt}{hline 14}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{p 0 6 2}Note: ATET estimate adjusted for covariates,{txt} panel effects, and time effects.{p_end}
+{p 0 6 2}Note: Treatment occurs {help j_xthetdid##|_new:at different times}.{txt}{p_end}
+
+{com}. *create residuals variable
+. predict basic_resid, residuals
+{res}{txt}
+{com}. 
+. //Robust standard errors//
+. xtdidregress (retention $control_list) (legal), group(fips) time(year) vce(robust)
+{res}
+{txt}Treatment and time information
+
+Time variable: {result:year}
+Control:       {result:legal} = {result:0}
+Treatment:     {result:legal} = {result:1}
+{res}{txt}{hline 13}{c TT}{hline 10}{hline 11}
+{col 14}{c |}   Control{col 25}  Treatment
+{hline 13}{c +}{hline 10}{hline 11}
+{res}Group        {txt}{c |}
+{space 8}fips {c |}{col 14}{res}{space 1}       35{col 25}{space 2}       14
+{txt}{hline 13}{c +}{hline 10}{hline 11}
+{res}Time         {txt}{c |}
+{space 5}Minimum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2013
+{txt}{space 5}Maximum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2021
+{txt}{hline 13}{c BT}{hline 10}{hline 11}
+
+{col 1}Difference-in-differences regression{col 58}{lalign 13:Number of obs}{col 71} = {res}{ralign 5:8,386}
+{txt}Data type: Longitudinal
+
+{res}{txt}{ralign 79:(Std. err. adjusted for {res:49} clusters in {res:fips})}
+{hline 14}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 15}{c |}{col 27}    Robust
+{col 1}    retention{col 15}{c |} Coefficient{col 27}  std. err.{col 39}      t{col 47}   P>|t|{col 55}     [95% con{col 68}f. interval]
+{hline 14}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}ATET          {txt}{c |}
+{space 8}legal {c |}
+{space 4}(1 vs 0)  {c |}{col 15}{res}{space 2}  .003378{col 27}{space 2} .0126482{col 38}{space 1}    0.27{col 47}{space 3}0.791{col 55}{space 4}-.0220528{col 68}{space 3} .0288088
+{txt}{hline 14}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{p 0 6 2}Note: ATET estimate adjusted for covariates,{txt} panel effects, and time effects.{p_end}
+{p 0 6 2}Note: Treatment occurs {help j_xthetdid##|_new:at different times}.{txt}{p_end}
+
+{com}. *create residuals variable
+. predict robust_resid, residuals
+{res}{txt}
+{com}. 
+. //Wild Bootstrap//
+. xtdidregress (retention $control_list) (legal), group(fips) time(year) vce(bootstrap)
+{res}{txt}(running {bf:xtdidregress} on estimation sample)
+{res}
+{text}Bootstrap replications ({result:50}){text}: {res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}10{res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}20{res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}30{res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}40{res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}.{res}{text}50{text} done
+{res}
+{txt}Treatment and time information
+
+Time variable: {result:year}
+Control:       {result:legal} = {result:0}
+Treatment:     {result:legal} = {result:1}
+{res}{txt}{hline 13}{c TT}{hline 10}{hline 11}
+{col 14}{c |}   Control{col 25}  Treatment
+{hline 13}{c +}{hline 10}{hline 11}
+{res}Group        {txt}{c |}
+{space 8}fips {c |}{col 14}{res}{space 1}       35{col 25}{space 2}       14
+{txt}{hline 13}{c +}{hline 10}{hline 11}
+{res}Time         {txt}{c |}
+{space 5}Minimum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2013
+{txt}{space 5}Maximum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2021
+{txt}{hline 13}{c BT}{hline 10}{hline 11}
+
+{col 1}Difference-in-differences regression{col 57}{lalign 13:Number of obs}{col 70} = {res}{ralign 6:8,386}
+{txt}{col 57}{lalign 13:Replications}{col 70} = {res}{ralign 6:50}
+{txt}{col 57}{lalign 13:Wald chi2({res:1})}{col 70} = {res}{ralign 6:0.06}
+{txt}{col 57}{lalign 13:Prob > chi2}{col 70} = {res}{ralign 6:0.8018}
+{txt}Data type: Longitudinal
+
+{res}{txt}{ralign 79:(Replications based on {res:49} clusters in {res:fips})}
+{hline 14}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 15}{c |}   Observed{col 27}   Bootstrap{col 55}         Norm{col 68}al-based
+{col 1}    retention{col 15}{c |} coefficient{col 27}  std. err.{col 39}      z{col 47}   P>|z|{col 55}     [95% con{col 68}f. interval]
+{hline 14}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}ATET          {txt}{c |}
+{space 8}legal {c |}
+{space 4}(1 vs 0)  {c |}{col 15}{res}{space 2}  .003378{col 27}{space 2} .0134599{col 38}{space 1}    0.25{col 47}{space 3}0.802{col 55}{space 4}-.0230029{col 68}{space 3} .0297589
+{txt}{hline 14}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{p 0 6 2}Note: ATET estimate adjusted for covariates,{txt} panel effects, and time effects.{p_end}
+{p 0 6 2}Note: Treatment occurs {help j_xthetdid##|_new:at different times}.{txt}{p_end}
+
+{com}. *create residuals variable
+. predict bootstrap_resid, residuals
+{res}{txt}
+{com}. 
+. //Aggregate to try to eliminate collinearlity//
+. *Standard
+. xtdidregress (retention $control_list) (legal), group(fips) time(year) aggregate(standard)
+{res}
+{txt}Treatment and time information
+
+Time variable: {result:year}
+Control:       {result:legal} = {result:0}
+Treatment:     {result:legal} = {result:1}
+{res}{txt}{hline 13}{c TT}{hline 10}{hline 11}
+{col 14}{c |}   Control{col 25}  Treatment
+{hline 13}{c +}{hline 10}{hline 11}
+{res}Group        {txt}{c |}
+{space 8}fips {c |}{col 14}{res}{space 1}       35{col 25}{space 2}       14
+{txt}{hline 13}{c +}{hline 10}{hline 11}
+{res}Time         {txt}{c |}
+{space 5}Minimum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2013
+{txt}{space 5}Maximum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2021
+{txt}{hline 13}{c BT}{hline 10}{hline 11}
+
+{col 1}Difference-in-differences regression{col 60}{lalign 13:Number of obs}{col 73} = {res}{ralign 3:812}
+{txt}Data type:   Longitudinal
+Aggregation:{bf: Standard}
+
+{res}{txt}{ralign 79:(Std. err. adjusted for {res:49} clusters in {res:fips})}
+{hline 14}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 15}{c |}{col 27}    Robust
+{col 1}    retention{col 15}{c |} Coefficient{col 27}  std. err.{col 39}      t{col 47}   P>|t|{col 55}     [95% con{col 68}f. interval]
+{hline 14}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}ATET          {txt}{c |}
+{space 8}legal {c |}
+{space 4}(1 vs 0)  {c |}{col 15}{res}{space 2} .0114565{col 27}{space 2} .0289686{col 38}{space 1}    0.40{col 47}{space 3}0.694{col 55}{space 4}-.0467888{col 68}{space 3} .0697018
+{txt}{hline 14}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{p 0 6 2}Note: ATET estimate adjusted for covariates,{txt} panel effects, and time effects.{p_end}
+{p 0 6 2}Note: Treatment occurs {help j_xthetdid##|_new:at different times}.{txt}{p_end}
+
+{com}. *Dlang
+. xtdidregress (retention $control_list) (legal), group(fips) time(year) aggregate(dlang)
+{res}
+{txt}Treatment and time information
+
+Time variable: {result:year}
+Control:       {result:legal} = {result:0}
+Treatment:     {result:legal} = {result:1}
+{res}{txt}{hline 13}{c TT}{hline 10}{hline 11}
+{col 14}{c |}   Control{col 25}  Treatment
+{hline 13}{c +}{hline 10}{hline 11}
+{res}Group        {txt}{c |}
+{space 8}fips {c |}{col 14}{res}{space 1}       35{col 25}{space 2}       14
+{txt}{hline 13}{c +}{hline 10}{hline 11}
+{res}Time         {txt}{c |}
+{space 5}Minimum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2013
+{txt}{space 5}Maximum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2021
+{txt}{hline 13}{c BT}{hline 10}{hline 11}
+
+{col 1}Difference-in-differences regression{col 60}{lalign 13:Number of obs}{col 73} = {res}{ralign 3:812}
+{txt}Data type:   Longitudinal
+Aggregation: {result:Donald}{ch_endash}{result:Lang}
+
+{res}{txt}{hline 14}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 1}    retention{col 15}{c |} Coefficient{col 27}  Std. err.{col 39}      t{col 47}   P>|t|{col 55}     [95% con{col 68}f. interval]
+{hline 14}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}ATET          {txt}{c |}
+{space 8}legal {c |}
+{space 4}(1 vs 0)  {c |}{col 15}{res}{space 2} .0114565{col 27}{space 2} .0155312{col 38}{space 1}    0.74{col 47}{space 3}0.461{col 55}{space 4}-.0190308{col 68}{space 3} .0419438
+{txt}{hline 14}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{p 0 6 2}Note: ATET estimate adjusted for covariates,{txt} panel effects, and time effects.{p_end}
+{p 0 6 2}Note: Treatment occurs {help j_xthetdid##|_new:at different times}.{txt}{p_end}
+
+{com}. 
+. //Only the close states//
+. xtdidregress (retention $control_list) (legal) if close ==1 | treated == 0, group(fips) time(year) aggregate(standard)
+{res}
+{txt}Treatment and time information
+
+Time variable: {result:year}
+Control:       {result:legal} = {result:0}
+Treatment:     {result:legal} = {result:1}
+{res}{txt}{hline 13}{c TT}{hline 10}{hline 11}
+{col 14}{c |}   Control{col 25}  Treatment
+{hline 13}{c +}{hline 10}{hline 11}
+{res}Group        {txt}{c |}
+{space 8}fips {c |}{col 14}{res}{space 1}       34{col 25}{space 2}        8
+{txt}{hline 13}{c +}{hline 10}{hline 11}
+{res}Time         {txt}{c |}
+{space 5}Minimum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2013
+{txt}{space 5}Maximum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2021
+{txt}{hline 13}{c BT}{hline 10}{hline 11}
+
+{col 1}Difference-in-differences regression{col 60}{lalign 13:Number of obs}{col 73} = {res}{ralign 3:701}
+{txt}Data type:   Longitudinal
+Aggregation:{bf: Standard}
+
+{res}{txt}{ralign 79:(Std. err. adjusted for {res:42} clusters in {res:fips})}
+{hline 14}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 15}{c |}{col 27}    Robust
+{col 1}    retention{col 15}{c |} Coefficient{col 27}  std. err.{col 39}      t{col 47}   P>|t|{col 55}     [95% con{col 68}f. interval]
+{hline 14}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}ATET          {txt}{c |}
+{space 8}legal {c |}
+{space 4}(1 vs 0)  {c |}{col 15}{res}{space 2}  .035654{col 27}{space 2} .0458132{col 38}{space 1}    0.78{col 47}{space 3}0.441{col 55}{space 4}-.0568676{col 68}{space 3} .1281756
+{txt}{hline 14}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{p 0 6 2}Note: ATET estimate adjusted for covariates,{txt} panel effects, and time effects.{p_end}
+{p 0 6 2}Note: Treatment occurs {help j_xthetdid##|_new:at different times}.{txt}{p_end}
+
+{com}. 
+. *if we want to go back to the graduation rate we can change the gen to be the mean graduation rate and then run the same code
+. //Create averages for simpler graphing//
+. egen control = mean (robust_resid)  if treated == 0 , by (year)
+{txt}(2,181 missing values generated)
+
+{com}. egen all_treated = mean (robust_resid) if treated !=0, by (years_before)
+{txt}(7,228 missing values generated)
+
+{com}. egen treated_2013 = mean (robust_resid) if treated == 2013, by (year)
+{txt}(8,698 missing values generated)
+
+{com}. egen treated_2015 = mean (robust_resid) if treated == 2015, by (year)
+{txt}(8,862 missing values generated)
+
+{com}. egen treated_2017 = mean (robust_resid) if treated == 2017, by (year)
+{txt}(8,261 missing values generated)
+
+{com}. egen treated_2019 = mean (robust_resid) if treated == 2019, by (year)
+{txt}(8,392 missing values generated)
+
+{com}. 
+. xtset fips
+
+{txt}{col 1}Panel variable: {res}fips{txt} (unbalanced)
+
+{com}. 
+. global varlist adm_rate cost_attend avgfacsal urate gdp med_hs_income faminc ownership pell_ever retention
+{txt}
+{com}. 
+. //Here is the hard coded part becuase i couldn't figure out the loop//
+. //Retention//
+. xtdidregress (retention $control_list) (legal), group(fips) time(year) vce(robust)
+{res}
+{txt}Treatment and time information
+
+Time variable: {result:year}
+Control:       {result:legal} = {result:0}
+Treatment:     {result:legal} = {result:1}
+{res}{txt}{hline 13}{c TT}{hline 10}{hline 11}
+{col 14}{c |}   Control{col 25}  Treatment
+{hline 13}{c +}{hline 10}{hline 11}
+{res}Group        {txt}{c |}
+{space 8}fips {c |}{col 14}{res}{space 1}       35{col 25}{space 2}       14
+{txt}{hline 13}{c +}{hline 10}{hline 11}
+{res}Time         {txt}{c |}
+{space 5}Minimum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2013
+{txt}{space 5}Maximum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2021
+{txt}{hline 13}{c BT}{hline 10}{hline 11}
+
+{col 1}Difference-in-differences regression{col 58}{lalign 13:Number of obs}{col 71} = {res}{ralign 5:8,386}
+{txt}Data type: Longitudinal
+
+{res}{txt}{ralign 79:(Std. err. adjusted for {res:49} clusters in {res:fips})}
+{hline 14}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 15}{c |}{col 27}    Robust
+{col 1}    retention{col 15}{c |} Coefficient{col 27}  std. err.{col 39}      t{col 47}   P>|t|{col 55}     [95% con{col 68}f. interval]
+{hline 14}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}ATET          {txt}{c |}
+{space 8}legal {c |}
+{space 4}(1 vs 0)  {c |}{col 15}{res}{space 2}  .003378{col 27}{space 2} .0126482{col 38}{space 1}    0.27{col 47}{space 3}0.791{col 55}{space 4}-.0220528{col 68}{space 3} .0288088
+{txt}{hline 14}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{p 0 6 2}Note: ATET estimate adjusted for covariates,{txt} panel effects, and time effects.{p_end}
+{p 0 6 2}Note: Treatment occurs {help j_xthetdid##|_new:at different times}.{txt}{p_end}
+
+{com}. predict retention_robust_resid, residuals
+{res}{txt}
+{com}. 
+. //Create averages for simpler graphing//
+. egen retention_control = mean (robust_resid)  if treated == 0 , by (year)
+{txt}(2,181 missing values generated)
+
+{com}. egen retention_all_treated = mean (robust_resid) if treated !=0, by (year)
+{txt}(7,345 missing values generated)
+
+{com}. egen retention_treated_2013 = mean (robust_resid) if treated == 2013, by (year)
+{txt}(8,698 missing values generated)
+
+{com}. egen retention_treated_2015 = mean (robust_resid) if treated == 2015, by (year)
+{txt}(8,862 missing values generated)
+
+{com}. egen retention_treated_2017 = mean (robust_resid) if treated == 2017, by (year)
+{txt}(8,261 missing values generated)
+
+{com}. egen retention_treated_2019 = mean (robust_resid) if treated == 2019, by (year)
+{txt}(8,392 missing values generated)
+
+{com}. 
+. sort year
+{txt}
+{com}. twoway (line retention_control years_before) ///
+> (line retention_treated_2013 years_before, lpattern(dash)) ///
+> (line retention_treated_2015 years_before, lpattern(longdash)) ///
+> (line retention_treated_2017 years_before, lpattern(dash_dot)) ///
+> (line retention_treated_2019 years_before), ///
+> xline(0) title("Retention by Institution") ///
+> ytitle("Retention") xtitle("Years")
+{res}{txt}
+{com}. graph export "retention_graph.jpg", replace
+{res}{txt}file {bf:retention_graph.jpg} written in JPEG format
+
+{com}. 
+. //Adm Rate//
+. xtdidregress (adm_rate cost_attend avgfacsal urate gdp med_hs_income faminc ownership pell_ever retention) (legal), group(fips) time(year) vce(robust)
+{res}
+{txt}Treatment and time information
+
+Time variable: {result:year}
+Control:       {result:legal} = {result:0}
+Treatment:     {result:legal} = {result:1}
+{res}{txt}{hline 13}{c TT}{hline 10}{hline 11}
+{col 14}{c |}   Control{col 25}  Treatment
+{hline 13}{c +}{hline 10}{hline 11}
+{res}Group        {txt}{c |}
+{space 8}fips {c |}{col 14}{res}{space 1}       35{col 25}{space 2}       14
+{txt}{hline 13}{c +}{hline 10}{hline 11}
+{res}Time         {txt}{c |}
+{space 5}Minimum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2013
+{txt}{space 5}Maximum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2021
+{txt}{hline 13}{c BT}{hline 10}{hline 11}
+
+{col 1}Difference-in-differences regression{col 58}{lalign 13:Number of obs}{col 71} = {res}{ralign 5:8,386}
+{txt}Data type: Longitudinal
+
+{res}{txt}{ralign 79:(Std. err. adjusted for {res:49} clusters in {res:fips})}
+{hline 14}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 15}{c |}{col 27}    Robust
+{col 1}     adm_rate{col 15}{c |} Coefficient{col 27}  std. err.{col 39}      t{col 47}   P>|t|{col 55}     [95% con{col 68}f. interval]
+{hline 14}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}ATET          {txt}{c |}
+{space 8}legal {c |}
+{space 4}(1 vs 0)  {c |}{col 15}{res}{space 2} .0055562{col 27}{space 2} .0200662{col 38}{space 1}    0.28{col 47}{space 3}0.783{col 55}{space 4}-.0347896{col 68}{space 3}  .045902
+{txt}{hline 14}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{p 0 6 2}Note: ATET estimate adjusted for covariates,{txt} panel effects, and time effects.{p_end}
+{p 0 6 2}Note: Treatment occurs {help j_xthetdid##|_new:at different times}.{txt}{p_end}
+
+{com}. predict adm_rate_robust_resid, residuals
+{res}{txt}
+{com}. 
+. //Create averages for simpler graphing//
+. egen adm_rate_control = mean (robust_resid)  if treated == 0 , by (year)
+{txt}(2,181 missing values generated)
+
+{com}. egen adm_rate_all_treated = mean (robust_resid) if treated !=0, by (year)
+{txt}(7,345 missing values generated)
+
+{com}. egen adm_rate_treated_2013 = mean (robust_resid) if treated == 2013, by (year)
+{txt}(8,698 missing values generated)
+
+{com}. egen adm_rate_treated_2015 = mean (robust_resid) if treated == 2015, by (year)
+{txt}(8,862 missing values generated)
+
+{com}. egen adm_rate_treated_2017 = mean (robust_resid) if treated == 2017, by (year)
+{txt}(8,261 missing values generated)
+
+{com}. egen adm_rate_treated_2019 = mean (robust_resid) if treated == 2019, by (year)
+{txt}(8,392 missing values generated)
+
+{com}. 
+. sort year
+{txt}
+{com}. twoway (line adm_rate_control years_before) ///
+> (line adm_rate_treated_2013 years_before, lpattern(dash)) ///
+> (line adm_rate_treated_2015 years_before, lpattern(longdash)) ///
+> (line adm_rate_treated_2017 years_before, lpattern(dash_dot)) ///
+> (line adm_rate_treated_2019 years_before), ///
+> xline(0) title("Admittance Rate by Institution") ///
+> ytitle("Admin Rate") xtitle("Years")
+{res}{txt}
+{com}. graph export "adm_rate_graph.jpg", replace
+{res}{txt}file {bf:adm_rate_graph.jpg} written in JPEG format
+
+{com}. 
+. //Cost Attend//
+. xtdidregress (cost_attend avgfacsal urate gdp med_hs_income faminc ownership pell_ever retention adm_rate) (legal), group(fips) time(year) vce(robust)
+{res}
+{txt}Treatment and time information
+
+Time variable: {result:year}
+Control:       {result:legal} = {result:0}
+Treatment:     {result:legal} = {result:1}
+{res}{txt}{hline 13}{c TT}{hline 10}{hline 11}
+{col 14}{c |}   Control{col 25}  Treatment
+{hline 13}{c +}{hline 10}{hline 11}
+{res}Group        {txt}{c |}
+{space 8}fips {c |}{col 14}{res}{space 1}       35{col 25}{space 2}       14
+{txt}{hline 13}{c +}{hline 10}{hline 11}
+{res}Time         {txt}{c |}
+{space 5}Minimum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2013
+{txt}{space 5}Maximum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2021
+{txt}{hline 13}{c BT}{hline 10}{hline 11}
+
+{col 1}Difference-in-differences regression{col 58}{lalign 13:Number of obs}{col 71} = {res}{ralign 5:8,386}
+{txt}Data type: Longitudinal
+
+{res}{txt}{ralign 79:(Std. err. adjusted for {res:49} clusters in {res:fips})}
+{hline 14}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 15}{c |}{col 27}    Robust
+{col 1}  cost_attend{col 15}{c |} Coefficient{col 27}  std. err.{col 39}      t{col 47}   P>|t|{col 55}     [95% con{col 68}f. interval]
+{hline 14}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}ATET          {txt}{c |}
+{space 8}legal {c |}
+{space 4}(1 vs 0)  {c |}{col 15}{res}{space 2} 1180.389{col 27}{space 2} 1643.172{col 38}{space 1}    0.72{col 47}{space 3}0.476{col 55}{space 4} -2123.43{col 68}{space 3} 4484.208
+{txt}{hline 14}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{p 0 6 2}Note: ATET estimate adjusted for covariates,{txt} panel effects, and time effects.{p_end}
+{p 0 6 2}Note: Treatment occurs {help j_xthetdid##|_new:at different times}.{txt}{p_end}
+
+{com}. predict cost_attend_robust_resid, residuals
+{res}{txt}
+{com}. 
+. //Create averages for simpler graphing//
+. egen cost_attend_control = mean (cost_attend_robust_resid)  if treated == 0 , by (year)
+{txt}(2,181 missing values generated)
+
+{com}. egen cost_attend_all_treated = mean (cost_attend_robust_resid) if treated !=0, by (year)
+{txt}(7,345 missing values generated)
+
+{com}. egen cost_attend_treated_2013 = mean (cost_attend_robust_resid) if treated == 2013, by (year)
+{txt}(8,698 missing values generated)
+
+{com}. egen cost_attend_treated_2015 = mean (cost_attend_robust_resid) if treated == 2015, by (year)
+{txt}(8,862 missing values generated)
+
+{com}. egen cost_attend_treated_2017 = mean (cost_attend_robust_resid) if treated == 2017, by (year)
+{txt}(8,261 missing values generated)
+
+{com}. egen cost_attend_treated_2019 = mean (cost_attend_robust_resid) if treated == 2019, by (year)
+{txt}(8,392 missing values generated)
+
+{com}. 
+. sort year
+{txt}
+{com}. twoway (line cost_attend_control years_before) ///
+> (line cost_attend_treated_2013 years_before, lpattern(dash)) ///
+> (line cost_attend_treated_2015 years_before, lpattern(longdash)) ///
+> (line cost_attend_treated_2017 years_before, lpattern(dash_dot)) ///
+> (line cost_attend_treated_2019 years_before), ///
+> xline(0) title("Cost Attend by Institution") ///
+> ytitle("Cost Attend") xtitle("Years")
+{res}{txt}
+{com}. graph export "cost_attend_graph.jpg", replace
+{res}{txt}file {bf:cost_attend_graph.jpg} written in JPEG format
+
+{com}. 
+. //Avg Faculty Salary//
+. xtdidregress (avgfacsal urate gdp med_hs_income faminc ownership pell_ever retention adm_rate cost_attend) (legal), group(fips) time(year) vce(robust)
+{res}
+{txt}Treatment and time information
+
+Time variable: {result:year}
+Control:       {result:legal} = {result:0}
+Treatment:     {result:legal} = {result:1}
+{res}{txt}{hline 13}{c TT}{hline 10}{hline 11}
+{col 14}{c |}   Control{col 25}  Treatment
+{hline 13}{c +}{hline 10}{hline 11}
+{res}Group        {txt}{c |}
+{space 8}fips {c |}{col 14}{res}{space 1}       35{col 25}{space 2}       14
+{txt}{hline 13}{c +}{hline 10}{hline 11}
+{res}Time         {txt}{c |}
+{space 5}Minimum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2013
+{txt}{space 5}Maximum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2021
+{txt}{hline 13}{c BT}{hline 10}{hline 11}
+
+{col 1}Difference-in-differences regression{col 58}{lalign 13:Number of obs}{col 71} = {res}{ralign 5:8,386}
+{txt}Data type: Longitudinal
+
+{res}{txt}{ralign 79:(Std. err. adjusted for {res:49} clusters in {res:fips})}
+{hline 14}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 15}{c |}{col 27}    Robust
+{col 1}    avgfacsal{col 15}{c |} Coefficient{col 27}  std. err.{col 39}      t{col 47}   P>|t|{col 55}     [95% con{col 68}f. interval]
+{hline 14}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}ATET          {txt}{c |}
+{space 8}legal {c |}
+{space 4}(1 vs 0)  {c |}{col 15}{res}{space 2} 311.6448{col 27}{space 2} 169.9943{col 38}{space 1}    1.83{col 47}{space 3}0.073{col 55}{space 4}-30.15164{col 68}{space 3} 653.4413
+{txt}{hline 14}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{p 0 6 2}Note: ATET estimate adjusted for covariates,{txt} panel effects, and time effects.{p_end}
+{p 0 6 2}Note: Treatment occurs {help j_xthetdid##|_new:at different times}.{txt}{p_end}
+
+{com}. predict avgfacsal_robust_resid, residuals
+{res}{txt}
+{com}. 
+. //Create averages for simpler graphing//
+. egen avgfacsal_control = mean (avgfacsal_robust_resid)  if treated == 0 , by (year)
+{txt}(2,181 missing values generated)
+
+{com}. egen avgfacsal_all_treated = mean (avgfacsal_robust_resid) if treated !=0, by (year)
+{txt}(7,345 missing values generated)
+
+{com}. egen avgfacsal_treated_2013 = mean (avgfacsal_robust_resid) if treated == 2013, by (year)
+{txt}(8,698 missing values generated)
+
+{com}. egen avgfacsal_treated_2015 = mean (avgfacsal_robust_resid) if treated == 2015, by (year)
+{txt}(8,862 missing values generated)
+
+{com}. egen avgfacsal_treated_2017 = mean (avgfacsal_robust_resid) if treated == 2017, by (year)
+{txt}(8,261 missing values generated)
+
+{com}. egen avgfacsal_treated_2019 = mean (avgfacsal_robust_resid) if treated == 2019, by (year)
+{txt}(8,392 missing values generated)
+
+{com}. 
+. sort year
+{txt}
+{com}. twoway (line avgfacsal_control years_before) ///
+> (line avgfacsal_treated_2013 years_before, lpattern(dash)) ///
+> (line avgfacsal_treated_2015 years_before, lpattern(longdash)) ///
+> (line avgfacsal_treated_2017 years_before, lpattern(dash_dot)) ///
+> (line avgfacsal_treated_2019 years_before), ///
+> xline(0) title("Average Faculty Salary by Institution") ///
+> ytitle("Average Faculty Salary") xtitle("Years")
+{res}{txt}
+{com}. graph export "avgfacsal_graph.jpg", replace
+{res}{txt}file {bf:avgfacsal_graph.jpg} written in JPEG format
+
+{com}. 
+. //Unempoyment Rate//
+. xtdidregress (urate gdp med_hs_income faminc ownership pell_ever retention adm_rate cost_attend avgfacsal) (legal), group(fips) time(year) vce(robust)
+{res}
+{txt}Treatment and time information
+
+Time variable: {result:year}
+Control:       {result:legal} = {result:0}
+Treatment:     {result:legal} = {result:1}
+{res}{txt}{hline 13}{c TT}{hline 10}{hline 11}
+{col 14}{c |}   Control{col 25}  Treatment
+{hline 13}{c +}{hline 10}{hline 11}
+{res}Group        {txt}{c |}
+{space 8}fips {c |}{col 14}{res}{space 1}       35{col 25}{space 2}       14
+{txt}{hline 13}{c +}{hline 10}{hline 11}
+{res}Time         {txt}{c |}
+{space 5}Minimum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2013
+{txt}{space 5}Maximum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2021
+{txt}{hline 13}{c BT}{hline 10}{hline 11}
+
+{col 1}Difference-in-differences regression{col 58}{lalign 13:Number of obs}{col 71} = {res}{ralign 5:8,386}
+{txt}Data type: Longitudinal
+
+{res}{txt}{ralign 79:(Std. err. adjusted for {res:49} clusters in {res:fips})}
+{hline 14}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 15}{c |}{col 27}    Robust
+{col 1}        urate{col 15}{c |} Coefficient{col 27}  std. err.{col 39}      t{col 47}   P>|t|{col 55}     [95% con{col 68}f. interval]
+{hline 14}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}ATET          {txt}{c |}
+{space 8}legal {c |}
+{space 4}(1 vs 0)  {c |}{col 15}{res}{space 2}-.2927494{col 27}{space 2} .3317007{col 38}{space 1}   -0.88{col 47}{space 3}0.382{col 55}{space 4}-.9596784{col 68}{space 3} .3741796
+{txt}{hline 14}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{p 0 6 2}Note: ATET estimate adjusted for covariates,{txt} panel effects, and time effects.{p_end}
+{p 0 6 2}Note: Treatment occurs {help j_xthetdid##|_new:at different times}.{txt}{p_end}
+
+{com}. predict urate_robust_resid, residuals
+{res}{txt}
+{com}. 
+. //Create averages for simpler graphing//
+. egen urate_control = mean (urate_robust_resid)  if treated == 0 , by (year)
+{txt}(2,181 missing values generated)
+
+{com}. egen urate_all_treated = mean (urate_robust_resid) if treated !=0, by (year)
+{txt}(7,345 missing values generated)
+
+{com}. egen urate_treated_2013 = mean (urate_robust_resid) if treated == 2013, by (year)
+{txt}(8,698 missing values generated)
+
+{com}. egen urate_treated_2015 = mean (urate_robust_resid) if treated == 2015, by (year)
+{txt}(8,862 missing values generated)
+
+{com}. egen urate_treated_2017 = mean (urate_robust_resid) if treated == 2017, by (year)
+{txt}(8,261 missing values generated)
+
+{com}. egen urate_treated_2019 = mean (urate_robust_resid) if treated == 2019, by (year)
+{txt}(8,392 missing values generated)
+
+{com}. 
+. sort year
+{txt}
+{com}. twoway (line urate_control years_before) ///
+> (line urate_treated_2013 years_before, lpattern(dash)) ///
+> (line urate_treated_2015 years_before, lpattern(longdash)) ///
+> (line urate_treated_2017 years_before, lpattern(dash_dot)) ///
+> (line urate_treated_2019 years_before), ///
+> xline(0) title("Unempoyment Rate by State") ///
+> ytitle("Unempoyment") xtitle("Years")
+{res}{txt}
+{com}. graph export "urate_graph.jpg", replace
+{res}{txt}file {bf:urate_graph.jpg} written in JPEG format
+
+{com}. 
+. 
+. //GDP//
+. xtdidregress (gdp med_hs_income faminc ownership pell_ever retention adm_rate cost_attend avgfacsal urate) (legal), group(fips) time(year) vce(robust)
+{res}
+{txt}Treatment and time information
+
+Time variable: {result:year}
+Control:       {result:legal} = {result:0}
+Treatment:     {result:legal} = {result:1}
+{res}{txt}{hline 13}{c TT}{hline 10}{hline 11}
+{col 14}{c |}   Control{col 25}  Treatment
+{hline 13}{c +}{hline 10}{hline 11}
+{res}Group        {txt}{c |}
+{space 8}fips {c |}{col 14}{res}{space 1}       35{col 25}{space 2}       14
+{txt}{hline 13}{c +}{hline 10}{hline 11}
+{res}Time         {txt}{c |}
+{space 5}Minimum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2013
+{txt}{space 5}Maximum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2021
+{txt}{hline 13}{c BT}{hline 10}{hline 11}
+
+{col 1}Difference-in-differences regression{col 58}{lalign 13:Number of obs}{col 71} = {res}{ralign 5:8,386}
+{txt}Data type: Longitudinal
+
+{res}{txt}{ralign 79:(Std. err. adjusted for {res:49} clusters in {res:fips})}
+{hline 14}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 15}{c |}{col 27}    Robust
+{col 1}          gdp{col 15}{c |} Coefficient{col 27}  std. err.{col 39}      t{col 47}   P>|t|{col 55}     [95% con{col 68}f. interval]
+{hline 14}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}ATET          {txt}{c |}
+{space 8}legal {c |}
+{space 4}(1 vs 0)  {c |}{col 15}{res}{space 2} 1.86e+11{col 27}{space 2} 1.97e+11{col 38}{space 1}    0.94{col 47}{space 3}0.350{col 55}{space 4}-2.10e+11{col 68}{space 3} 5.83e+11
+{txt}{hline 14}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{p 0 6 2}Note: ATET estimate adjusted for covariates,{txt} panel effects, and time effects.{p_end}
+{p 0 6 2}Note: Treatment occurs {help j_xthetdid##|_new:at different times}.{txt}{p_end}
+
+{com}. predict gdp_robust_resid, residuals
+{res}{txt}
+{com}. 
+. //Create averages for simpler graphing//
+. egen gdp_control = mean (gdp_robust_resid)  if treated == 0 , by (year)
+{txt}(2,181 missing values generated)
+
+{com}. egen gdp_all_treated = mean (gdp_robust_resid) if treated !=0, by (year)
+{txt}(7,345 missing values generated)
+
+{com}. egen gdp_treated_2013 = mean (gdp_robust_resid) if treated == 2013, by (year)
+{txt}(8,698 missing values generated)
+
+{com}. egen gdp_treated_2015 = mean (gdp_robust_resid) if treated == 2015, by (year)
+{txt}(8,862 missing values generated)
+
+{com}. egen gdp_treated_2017 = mean (gdp_robust_resid) if treated == 2017, by (year)
+{txt}(8,261 missing values generated)
+
+{com}. egen gdp_treated_2019 = mean (gdp_robust_resid) if treated == 2019, by (year)
+{txt}(8,392 missing values generated)
+
+{com}. 
+. sort year
+{txt}
+{com}. twoway (line gdp_control years_before) ///
+> (line gdp_treated_2013 years_before, lpattern(dash)) ///
+> (line gdp_treated_2015 years_before, lpattern(longdash)) ///
+> (line gdp_treated_2017 years_before, lpattern(dash_dot)) ///
+> (line gdp_treated_2019 years_before), ///
+> xline(0) title("GDP by State") ///
+> ytitle("GDP") xtitle("Years")
+{res}{txt}
+{com}. graph export "gdp_graph.jpg", replace
+{res}{txt}file {bf:gdp_graph.jpg} written in JPEG format
+
+{com}. 
+. //Median Household Income//
+. xtdidregress (med_hs_income faminc ownership pell_ever retention adm_rate cost_attend avgfacsal urate gdp) (legal), group(fips) time(year) vce(robust)
+{res}
+{txt}Treatment and time information
+
+Time variable: {result:year}
+Control:       {result:legal} = {result:0}
+Treatment:     {result:legal} = {result:1}
+{res}{txt}{hline 13}{c TT}{hline 10}{hline 11}
+{col 14}{c |}   Control{col 25}  Treatment
+{hline 13}{c +}{hline 10}{hline 11}
+{res}Group        {txt}{c |}
+{space 8}fips {c |}{col 14}{res}{space 1}       35{col 25}{space 2}       14
+{txt}{hline 13}{c +}{hline 10}{hline 11}
+{res}Time         {txt}{c |}
+{space 5}Minimum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2013
+{txt}{space 5}Maximum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2021
+{txt}{hline 13}{c BT}{hline 10}{hline 11}
+
+{col 1}Difference-in-differences regression{col 58}{lalign 13:Number of obs}{col 71} = {res}{ralign 5:8,386}
+{txt}Data type: Longitudinal
+
+{res}{txt}{ralign 78:(Std. err. adjusted for {res:49} clusters in {res:fips})}
+{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}med_hs_inc~e{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}ATET         {txt}{c |}
+{space 7}legal {c |}
+{space 3}(1 vs 0)  {c |}{col 14}{res}{space 2} 2266.872{col 26}{space 2} 979.2958{col 37}{space 1}    2.31{col 46}{space 3}0.025{col 54}{space 4} 297.8661{col 67}{space 3} 4235.878
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{p 0 6 2}Note: ATET estimate adjusted for covariates,{txt} panel effects, and time effects.{p_end}
+{p 0 6 2}Note: Treatment occurs {help j_xthetdid##|_new:at different times}.{txt}{p_end}
+
+{com}. predict med_hs_income_robust_resid, residuals
+{res}{txt}
+{com}. 
+. //Create averages for simpler graphing//
+. egen med_hs_income_control = mean (med_hs_income_robust_resid)  if treated == 0 , by (year)
+{txt}(2,181 missing values generated)
+
+{com}. egen med_hs_income_all_treated = mean (med_hs_income_robust_resid) if treated !=0, by (year)
+{txt}(7,345 missing values generated)
+
+{com}. egen med_hs_income_treated_2013 = mean (med_hs_income_robust_resid) if treated == 2013, by (year)
+{txt}(8,698 missing values generated)
+
+{com}. egen med_hs_income_treated_2015 = mean (med_hs_income_robust_resid) if treated == 2015, by (year)
+{txt}(8,862 missing values generated)
+
+{com}. egen med_hs_income_treated_2017 = mean (med_hs_income_robust_resid) if treated == 2017, by (year)
+{txt}(8,261 missing values generated)
+
+{com}. egen med_hs_income_treated_2019 = mean (med_hs_income_robust_resid) if treated == 2019, by (year)
+{txt}(8,392 missing values generated)
+
+{com}. 
+. sort year
+{txt}
+{com}. twoway (line med_hs_income_control years_before) ///
+> (line med_hs_income_treated_2013 years_before, lpattern(dash)) ///
+> (line med_hs_income_treated_2015 years_before, lpattern(longdash)) ///
+> (line med_hs_income_treated_2017 years_before, lpattern(dash_dot)) ///
+> (line med_hs_income_treated_2019 years_before), ///
+> xline(0) title("Median Household Income by State") ///
+> ytitle("Median Household Income") xtitle("Years")
+{res}{txt}
+{com}. graph export "med_hs_income_graph.jpg", replace
+{res}{txt}file {bf:med_hs_income_graph.jpg} written in JPEG format
+
+{com}. 
+. //Faminc//
+. xtdidregress (faminc ownership pell_ever retention adm_rate cost_attend avgfacsal urate gdp med_hs_income) (legal), group(fips) time(year) vce(robust)
+{res}
+{txt}Treatment and time information
+
+Time variable: {result:year}
+Control:       {result:legal} = {result:0}
+Treatment:     {result:legal} = {result:1}
+{res}{txt}{hline 13}{c TT}{hline 10}{hline 11}
+{col 14}{c |}   Control{col 25}  Treatment
+{hline 13}{c +}{hline 10}{hline 11}
+{res}Group        {txt}{c |}
+{space 8}fips {c |}{col 14}{res}{space 1}       35{col 25}{space 2}       14
+{txt}{hline 13}{c +}{hline 10}{hline 11}
+{res}Time         {txt}{c |}
+{space 5}Minimum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2013
+{txt}{space 5}Maximum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2021
+{txt}{hline 13}{c BT}{hline 10}{hline 11}
+
+{col 1}Difference-in-differences regression{col 58}{lalign 13:Number of obs}{col 71} = {res}{ralign 5:8,386}
+{txt}Data type: Longitudinal
+
+{res}{txt}{ralign 79:(Std. err. adjusted for {res:49} clusters in {res:fips})}
+{hline 14}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 15}{c |}{col 27}    Robust
+{col 1}       faminc{col 15}{c |} Coefficient{col 27}  std. err.{col 39}      t{col 47}   P>|t|{col 55}     [95% con{col 68}f. interval]
+{hline 14}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}ATET          {txt}{c |}
+{space 8}legal {c |}
+{space 4}(1 vs 0)  {c |}{col 15}{res}{space 2}-2954.485{col 27}{space 2} 1962.701{col 38}{space 1}   -1.51{col 47}{space 3}0.139{col 55}{space 4}-6900.759{col 68}{space 3} 991.7892
+{txt}{hline 14}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{p 0 6 2}Note: ATET estimate adjusted for covariates,{txt} panel effects, and time effects.{p_end}
+{p 0 6 2}Note: Treatment occurs {help j_xthetdid##|_new:at different times}.{txt}{p_end}
+
+{com}. predict faminc_robust_resid, residuals
+{res}{txt}
+{com}. 
+. //Create averages for simpler graphing//
+. egen faminc_control = mean (faminc_robust_resid)  if treated == 0 , by (year)
+{txt}(2,181 missing values generated)
+
+{com}. egen faminc_all_treated = mean (faminc_robust_resid) if treated !=0, by (year)
+{txt}(7,345 missing values generated)
+
+{com}. egen faminc_treated_2013 = mean (faminc_robust_resid) if treated == 2013, by (year)
+{txt}(8,698 missing values generated)
+
+{com}. egen faminc_treated_2015 = mean (faminc_robust_resid) if treated == 2015, by (year)
+{txt}(8,862 missing values generated)
+
+{com}. egen faminc_treated_2017 = mean (faminc_robust_resid) if treated == 2017, by (year)
+{txt}(8,261 missing values generated)
+
+{com}. egen faminc_treated_2019 = mean (faminc_robust_resid) if treated == 2019, by (year)
+{txt}(8,392 missing values generated)
+
+{com}. 
+. sort year
+{txt}
+{com}. twoway (line faminc_control years_before) ///
+> (line faminc_treated_2013 years_before, lpattern(dash)) ///
+> (line faminc_treated_2015 years_before, lpattern(longdash)) ///
+> (line faminc_treated_2017 years_before, lpattern(dash_dot)) ///
+> (line faminc_treated_2019 years_before), ///
+> xline(0) title("Family Income by Institution") ///
+> ytitle("Family Income") xtitle("Years")
+{res}{txt}
+{com}. graph export "faminc_graph.jpg", replace
+{res}{txt}file {bf:faminc_graph.jpg} written in JPEG format
+
+{com}. 
+. //ownership//
+. xtdidregress (ownership pell_ever retention adm_rate cost_attend avgfacsal urate gdp med_hs_income faminc) (legal), group(fips) time(year) vce(robust)
+{res}
+{txt}Treatment and time information
+
+Time variable: {result:year}
+Control:       {result:legal} = {result:0}
+Treatment:     {result:legal} = {result:1}
+{res}{txt}{hline 13}{c TT}{hline 10}{hline 11}
+{col 14}{c |}   Control{col 25}  Treatment
+{hline 13}{c +}{hline 10}{hline 11}
+{res}Group        {txt}{c |}
+{space 8}fips {c |}{col 14}{res}{space 1}       35{col 25}{space 2}       14
+{txt}{hline 13}{c +}{hline 10}{hline 11}
+{res}Time         {txt}{c |}
+{space 5}Minimum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2013
+{txt}{space 5}Maximum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2021
+{txt}{hline 13}{c BT}{hline 10}{hline 11}
+
+{col 1}Difference-in-differences regression{col 58}{lalign 13:Number of obs}{col 71} = {res}{ralign 5:8,386}
+{txt}Data type: Longitudinal
+
+{res}{txt}{ralign 79:(Std. err. adjusted for {res:49} clusters in {res:fips})}
+{hline 14}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 15}{c |}{col 27}    Robust
+{col 1}    ownership{col 15}{c |} Coefficient{col 27}  std. err.{col 39}      t{col 47}   P>|t|{col 55}     [95% con{col 68}f. interval]
+{hline 14}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}ATET          {txt}{c |}
+{space 8}legal {c |}
+{space 4}(1 vs 0)  {c |}{col 15}{res}{space 2}-.0981311{col 27}{space 2} .0339936{col 38}{space 1}   -2.89{col 47}{space 3}0.006{col 55}{space 4}-.1664798{col 68}{space 3}-.0297825
+{txt}{hline 14}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{p 0 6 2}Note: ATET estimate adjusted for covariates,{txt} panel effects, and time effects.{p_end}
+{p 0 6 2}Note: Treatment occurs {help j_xthetdid##|_new:at different times}.{txt}{p_end}
+
+{com}. predict ownership_robust_resid, residuals
+{res}{txt}
+{com}. 
+. //Create averages for simpler graphing//
+. egen ownership_control = mean (ownership_robust_resid)  if treated == 0 , by (year)
+{txt}(2,181 missing values generated)
+
+{com}. egen ownership_all_treated = mean (ownership_robust_resid) if treated !=0, by (year)
+{txt}(7,345 missing values generated)
+
+{com}. egen ownership_treated_2013 = mean (ownership_robust_resid) if treated == 2013, by (year)
+{txt}(8,698 missing values generated)
+
+{com}. egen ownership_treated_2015 = mean (ownership_robust_resid) if treated == 2015, by (year)
+{txt}(8,862 missing values generated)
+
+{com}. egen ownership_treated_2017 = mean (ownership_robust_resid) if treated == 2017, by (year)
+{txt}(8,261 missing values generated)
+
+{com}. egen ownership_treated_2019 = mean (ownership_robust_resid) if treated == 2019, by (year)
+{txt}(8,392 missing values generated)
+
+{com}. 
+. sort year
+{txt}
+{com}. twoway (line ownership_control years_before) ///
+> (line ownership_treated_2013 years_before, lpattern(dash)) ///
+> (line ownership_treated_2015 years_before, lpattern(longdash)) ///
+> (line ownership_treated_2017 years_before, lpattern(dash_dot)) ///
+> (line ownership_treated_2019 years_before), ///
+> xline(0) title("Ownership Type by Institution") ///
+> ytitle("Ownership") xtitle("Years")
+{res}{txt}
+{com}. graph export "ownership_graph.jpg", replace
+{res}{txt}file {bf:ownership_graph.jpg} written in JPEG format
+
+{com}. 
+. //pell_ever//
+. xtdidregress (pell_ever retention adm_rate cost_attend avgfacsal urate gdp med_hs_income faminc ownership) (legal), group(fips) time(year) vce(robust)
+{res}
+{txt}Treatment and time information
+
+Time variable: {result:year}
+Control:       {result:legal} = {result:0}
+Treatment:     {result:legal} = {result:1}
+{res}{txt}{hline 13}{c TT}{hline 10}{hline 11}
+{col 14}{c |}   Control{col 25}  Treatment
+{hline 13}{c +}{hline 10}{hline 11}
+{res}Group        {txt}{c |}
+{space 8}fips {c |}{col 14}{res}{space 1}       35{col 25}{space 2}       14
+{txt}{hline 13}{c +}{hline 10}{hline 11}
+{res}Time         {txt}{c |}
+{space 5}Minimum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2013
+{txt}{space 5}Maximum {c |}{col 14}{res}{space 1}     2004{col 25}{space 2}     2021
+{txt}{hline 13}{c BT}{hline 10}{hline 11}
+
+{col 1}Difference-in-differences regression{col 58}{lalign 13:Number of obs}{col 71} = {res}{ralign 5:8,386}
+{txt}Data type: Longitudinal
+
+{res}{txt}{ralign 79:(Std. err. adjusted for {res:49} clusters in {res:fips})}
+{hline 14}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 15}{c |}{col 27}    Robust
+{col 1}    pell_ever{col 15}{c |} Coefficient{col 27}  std. err.{col 39}      t{col 47}   P>|t|{col 55}     [95% con{col 68}f. interval]
+{hline 14}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}ATET          {txt}{c |}
+{space 8}legal {c |}
+{space 4}(1 vs 0)  {c |}{col 15}{res}{space 2}-.0068697{col 27}{space 2} .0075298{col 38}{space 1}   -0.91{col 47}{space 3}0.366{col 55}{space 4}-.0220094{col 68}{space 3} .0082699
+{txt}{hline 14}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{p 0 6 2}Note: ATET estimate adjusted for covariates,{txt} panel effects, and time effects.{p_end}
+{p 0 6 2}Note: Treatment occurs {help j_xthetdid##|_new:at different times}.{txt}{p_end}
+
+{com}. predict pell_ever_robust_resid, residuals
+{res}{txt}
+{com}. 
+. //Create averages for simpler graphing//
+. egen pell_ever_control = mean (pell_ever_robust_resid)  if treated == 0 , by (year)
+{txt}(2,181 missing values generated)
+
+{com}. egen pell_ever_all_treated = mean (pell_ever_robust_resid) if treated !=0, by (year)
+{txt}(7,345 missing values generated)
+
+{com}. egen pell_ever_treated_2013 = mean (pell_ever_robust_resid) if treated == 2013, by (year)
+{txt}(8,698 missing values generated)
+
+{com}. egen pell_ever_treated_2015 = mean (pell_ever_robust_resid) if treated == 2015, by (year)
+{txt}(8,862 missing values generated)
+
+{com}. egen pell_ever_treated_2017 = mean (pell_ever_robust_resid) if treated == 2017, by (year)
+{txt}(8,261 missing values generated)
+
+{com}. egen pell_ever_treated_2019 = mean (pell_ever_robust_resid) if treated == 2019, by (year)
+{txt}(8,392 missing values generated)
+
+{com}. 
+. sort year
+{txt}
+{com}. twoway (line pell_ever_control years_before) ///
+> (line pell_ever_treated_2013 years_before, lpattern(dash)) ///
+> (line pell_ever_treated_2015 years_before, lpattern(longdash)) ///
+> (line pell_ever_treated_2017 years_before, lpattern(dash_dot)) ///
+> (line pell_ever_treated_2019 years_before), ///
+> xline(0) title("Pell Grant Ever by Institution") ///
+> ytitle("Pell Grant Ever") xtitle("Years")
+{res}{txt}
+{com}. graph export "pell_ever_graph.jpg", replace
+{res}{txt}file {bf:pell_ever_graph.jpg} written in JPEG format
+
+{com}. 
+. 
+. //Sort so the graph looks clean//
+. sort years_before
+{txt}
+{com}. //All treated states//
+. twoway (line control years_before) (line all_treated years_before) , xline(0) yscale(range(-0.1,0.1)) ylabel(-0.1(0.02)0.1) title("Retention Rates by State") ytitle("Retention Rates") xtitle("Years")
+{res}{txt}
+{com}. graph export "all_treated_graph.jpg", replace
+{res}{txt}file {bf:all_treated_graph.jpg} written in JPEG format
+
+{com}. 
+. *the graph still has a lot of noise even when we just graph the residuals
+. //Create graph centered on treatement time//
+. twoway (line control years_before) (line all_treated years_before) (line treated_2013 years_before) (line treated_2015 years_before) (line treated_2017 years_before) (line treated_2019 years_before), xline(0) title("Retention Rates by State") ytitle("Retention Rates") xtitle("Years")
+{res}{txt}
+{com}. graph export "parallel_trends_centered_graph.jpg", replace
+{res}{txt}file {bf:parallel_trends_centered_graph.jpg} written in JPEG format
+
+{com}. 
+. //Create graph with lines at treatment times and labels//
+. twoway (line control year) (line treated_2013 year) (line treated_2015 year) (line treated_2017 year) (line treated_2019 year), xline(2013) xline(2015) xline(2017) xline(2019) title("Retention Rates by State") ytitle("Retention Rates") xtitle("Years")
+{res}{txt}
+{com}. graph export "parallel_trends_basic_graph.jpg", replace
+{res}{txt}file {bf:parallel_trends_basic_graph.jpg} written in JPEG format
+
+{com}. 
+. //Specific treated groups//
+. //2013//
+. twoway (line control years_before) (line treated_2013 years_before, lpattern(dash)) , xline(0) title("Retention Rates by State") ytitle("Retention Rates") xtitle("Years")
+{res}{txt}
+{com}. graph export "2013_centered_graph.jpg", replace
+{res}{txt}file {bf:2013_centered_graph.jpg} written in JPEG format
+
+{com}. twoway (line control year) (line treated_2013 year, lpattern(dash)) , xline(2013) title("Retention Rates by State") ytitle("Retention Rates") xtitle("Years")
+{res}{txt}
+{com}. graph export "2013_basic_graph.jpg", replace
+{res}{txt}file {bf:2013_basic_graph.jpg} written in JPEG format
+
+{com}. //2015//
+. twoway (line control years_before) (line treated_2015 years_before, lpattern(dash)) , xline(0) title("Retention Rates by State") ytitle("Retention Rates") xtitle("Years")
+{res}{txt}
+{com}. graph export "2015_centered_graph.jpg", replace
+{res}{txt}file {bf:2015_centered_graph.jpg} written in JPEG format
+
+{com}. twoway (line control year) (line treated_2015 year, lpattern(dash)) , xline(2015) title("Retention Rates by State") ytitle("Retention Rates") xtitle("Years")
+{res}{txt}
+{com}. graph export "2015_basic_graph.jpg", replace
+{res}{txt}file {bf:2015_basic_graph.jpg} written in JPEG format
+
+{com}. //2017//
+. twoway (line control years_before) (line treated_2017 years_before, lpattern(dash)) , xline(0) title("Retention Rates by State") ytitle("Retention Rates") xtitle("Years")
+{res}{txt}
+{com}. graph export "2017_centered_graph.jpg", replace
+{res}{txt}file {bf:2017_centered_graph.jpg} written in JPEG format
+
+{com}. twoway (line control year) (line treated_2017 year, lpattern(dash)) , xline(2017) title("Retention Rates by State") ytitle("Retention Rates") xtitle("Years")
+{res}{txt}
+{com}. graph export "2017_basic_graph.jpg", replace
+{res}{txt}file {bf:2017_basic_graph.jpg} written in JPEG format
+
+{com}. //2019//
+. twoway (line control years_before) (line treated_2019 years_before, lpattern(dash)) , xline(0) title("Retention Rates by State") ytitle("Retention Rates") xtitle("Years")
+{res}{txt}
+{com}. graph export "2019_centered_graph.jpg", replace
+{res}{txt}file {bf:2019_centered_graph.jpg} written in JPEG format
+
+{com}. twoway (line control year) (line treated_2019 year, lpattern(dash)) , xline(2019) title("Retention Rates by State") ytitle("Retention Rates") xtitle("Years")
+{res}{txt}
+{com}. graph export "2019_basic_graph.jpg", replace
+{res}{txt}file {bf:2019_basic_graph.jpg} written in JPEG format
+
+{com}. 
+. //FOR REFERENCE : Jane's regression//
+. *xi: regress retention legal i.inst i.year
+. 
+. //Close the log//
+. log close
+      {txt}name:  {res}<unnamed>
+       {txt}log:  {res}C:\Users\hyattjon\Box\Fall 2023\Econ 398\Final Project\output_from_regression\Final Project.txt
+  {txt}log type:  {res}smcl
+ {txt}closed on:  {res}18 Dec 2024, 12:37:51
+{txt}{.-}
+{smcl}
+{txt}{sf}{ul off}
