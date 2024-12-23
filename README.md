@@ -8,4 +8,4 @@ In the Python folder I have included some of the code written as a research assi
 * The run_all.py is a script used to run all subscripts to collect the data.
 * The statistics_functions.py file is a module where I include the analysis and vizualization functions used in the stats_notebook.ipynb file. I accessed the database where the data was stored and then analyzed different time periods. The statistics_functions.py file has complex data manipulation, visualization, and includes code to write LaTeX. 
 
-The Exchange Liquidity pdf is a writing sample from my research with Dr. Condie. This is a draft I wrote that summarizes some of our findings.
+The Exchange Liquidity pdf is a writing sample from my research with Dr. Condie. This is a draft I wrote that summarizes some of our findings. The LaTeX I wrote includes well formatted tables and plots. 
