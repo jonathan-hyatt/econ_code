@@ -11,4 +11,4 @@ In the Python folder I have included some of the code written as a research assi
 The Exchange Liquidity pdf is a writing sample from my research with Dr. Condie. This is a draft I wrote that summarizes some of our findings. The LaTeX I wrote includes well formatted tables and plots. 
 
 The other projects folder contains other projects I work on off and on. 
-* Solow_growth_app.py is a streamlit file that is a dynamic solow growth model. It allows for parameters to be input and shows changes. It shows a plot of capital per worker, output per worker, consumption per worker, and labor as well as an Acemoglu diagram. It also shows before and after plots once changes are made. 
+* Solow_growth_app.py is a streamlit file that is a dynamic solow growth model. It allows for parameters to be input and shows changes. It shows a plot of capital, output, consumption, and labor over time as well as an Acemoglu diagram. It also shows before and after plots once changes are made. 
