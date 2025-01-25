@@ -9,3 +9,6 @@ In the Python folder I have included some of the code written as a research assi
 * The statistics_functions.py file is a module where I include the analysis and vizualization functions used in the stats_notebook.ipynb file. I accessed the database where the data was stored and then analyzed different time periods. The statistics_functions.py file has complex data manipulation, visualization, and includes code to write LaTeX. 
 
 The Exchange Liquidity pdf is a writing sample from my research with Dr. Condie. This is a draft I wrote that summarizes some of our findings. The LaTeX I wrote includes well formatted tables and plots. 
+
+The other projects folder contains other projects I work on off and on. 
+* Solow_growth_app.py is a streamlit file that is a dynamic solow growth model. It allows for parameters to be input and shows changes. It shows a plot of capital per worker, output per worker, consumption per worker, and labor as well as an Acemoglu diagram. It also shows before and after plots once changes are made. 
